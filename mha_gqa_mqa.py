@@ -14,7 +14,8 @@ class Attention(nn.Module):
         self.w_q = nn.Linear(d_model, d_model, bias=False)
         self.w_k = nn.Linear(d_model, self.head_dim * self.num_kv_heads, bias=False)
         self.w_v = nn.Linear(d_model, self.head_dim * self.num_kv_heads, bias=False)
-    
+        self.w_o = nn.Linear(d_model, d_model, bias=False)
+
     def repeat_kv(self, x):
         if self.q_per_kv == 1:
             return x
@@ -38,11 +39,16 @@ class Attention(nn.Module):
         score = Q @ K.transpose(-1, -2) / math.sqrt(self.head_dim)
         if causal:
             mask = torch.triu(torch.ones(S, S, dtype=bool), diagonal=1)
-            score = torch.masked_fill(score, mask, float("-inf"))
+            score = score.masked_fill(mask, float("-inf"))
 
         # attn
         # BHSS @ BHSD -> BHSD
-        return torch.softmax(score, dim=-1) @ V
+        attn = torch.softmax(score, dim=-1) @ V
+
+        # merge heads: BHSD -> [B, S, num_q_heads * head_dim] = [B, S, d_model]
+        attn = attn.transpose(1, 2).reshape(B, S, -1)
+        # output projection
+        return self.w_o(attn)
 
 
 mha = Attention(32, 4)
