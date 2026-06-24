@@ -51,9 +51,9 @@ class Attention(nn.Module):
         return self.w_o(attn)
 
 
-mha = Attention(32, 4)
-gqa = Attention(32, 4, 2)
-mqa = Attention(32, 4, 1)
+mha = Attention(d_model=32, num_q_heads=4)
+gqa = Attention(d_model=32, num_q_heads=4, num_kv_heads=2)
+mqa = Attention(d_model=32, num_q_heads=4, num_kv_heads=1)
 
 x = torch.randn(2, 3, 32)
 print("[MHA] x.shape: ", mha.forward(x, True).shape)
