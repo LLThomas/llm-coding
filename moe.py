@@ -1,15 +1,20 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class FFN(nn.Module):
     def __init__(self, d_model, d_ff):
         super().__init__()
-        self.w1 = nn.Linear(d_model, d_ff, bias=False)
-        self.w2 = nn.Linear(d_ff, d_model, bias=False)
+        # gate
+        self.gate_proj = nn.Linear(d_model, d_ff, bias=False)
+        # up
+        self.up_proj   = nn.Linear(d_model, d_ff, bias=False)
+        # down
+        self.down_proj = nn.Linear(d_ff, d_model, bias=False)
 
     def forward(self, x):
-        return self.w2(torch.relu(self.w1(x)))
+        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
 
 
 class MoE(nn.Module):
@@ -52,8 +57,7 @@ class MoE(nn.Module):
         return out.reshape(batch_size, seq_len, d_model)
 
 
-if __name__ == "__main__":
-    moe = MoE(d_model=8, d_ff=32, num_expert=4, top_k=2, num_shared_experts=1)
-    x = torch.Tensor(2, 5, 8)
-    out = moe(x)
-    print("x.shape: ", x.shape, ", out.shape: ", out.shape)
+moe = MoE(d_model=8, d_ff=32, num_expert=4, top_k=2, num_shared_experts=1)
+x = torch.randn(2, 5, 8)
+out = moe(x)
+print("x.shape: ", x.shape, ", out.shape: ", out.shape)
