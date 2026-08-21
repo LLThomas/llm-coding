@@ -22,8 +22,6 @@ class MoE(nn.Module):
     def __init__(self, d_model, ffn_dim, num_experts, topk):
         super().__init__()
 
-        self.d_model = d_model
-        self.num_experts = num_experts
         self.topk = topk
 
         # gate / experts
